@@ -34,37 +34,66 @@ class TaggingService:
         image.save(buffered, format="PNG")
         return base64.b64encode(buffered.getvalue()).decode('utf-8')
 
-    def interrogate_ollama(self, image, model="llava"):
+    def interrogate_ollama(self, image, model="llava", system_prompt=None):
         """
         Performs image interrogation using a local Ollama instance.
         
         Args:
             image (PIL.Image): Source image.
             model (str): The vision model to use (e.g., 'llava').
+            system_prompt (str, optional): Custom persona/instructions.
             
         Returns:
             str: Image description or error message.
         """
         config = llm_service.get_config()
         endpoint = config['ollama_endpoint']
-        url = f"{endpoint.rstrip('/')}/api/generate"
+        url = f"{endpoint.rstrip('/')}/api/chat"
         
         b64_image = self.encode_image(image)
         if not b64_image:
             return "No image provided."
 
+        keep_alive = config.get("ollama_keep_alive", 60)
+        try:
+            if isinstance(keep_alive, str) and keep_alive.strip().isdigit():
+                keep_alive = int(keep_alive.strip())
+            elif isinstance(keep_alive, str):
+                keep_alive = keep_alive.strip()
+        except Exception:
+            pass
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+
+        user_prompt = "Describe this image." if system_prompt else "Describe this image in detail for a Stable Diffusion prompt. focus on subjects, lighting, and style."
+        messages.append({
+            "role": "user",
+            "content": user_prompt,
+            "images": [b64_image]
+        })
+
         data = {
             "model": model,
-            "prompt": "Describe this image in detail for a Stable Diffusion prompt. focus on subjects, lighting, and style.",
-            "images": [b64_image],
-            "stream": False
+            "messages": messages,
+            "stream": False,
+            "keep_alive": keep_alive
         }
 
         try:
             response = requests.post(url, json=data, timeout=self.timeout)
+            if response.status_code == 400:
+                try:
+                    err_json = response.json()
+                    err_msg = err_json.get('error', '')
+                    if 'multimodal' in err_msg.lower() or 'vision' in err_msg.lower() or 'image' in err_msg.lower():
+                        return f"Ollama Error: The model '{model}' does not support vision (multimodal input). Please select a vision-capable model (e.g. llava, moondream, qwen2.5-vl)."
+                except Exception:
+                    pass
             response.raise_for_status()
             result = response.json()
-            return result.get('response', 'No description generated.')
+            return result.get('message', {}).get('content', 'No description generated.')
         except requests.exceptions.HTTPError as e:
             return f"Ollama HTTP Error ({e.response.status_code}): {e.response.text}"
         except requests.exceptions.Timeout:
@@ -104,10 +133,11 @@ class TaggingService:
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
             
+        user_prompt = "Describe this image." if system_prompt else "Describe this image for a Stable Diffusion prompt. Output only the prompt tags and description."
         messages.append({
             "role": "user",
             "content": [
-                {"type": "text", "text": "Describe this image for a Stable Diffusion prompt. Output only the prompt tags and description."},
+                {"type": "text", "text": user_prompt},
                 {
                     "type": "image_url",
                     "image_url": {
@@ -126,6 +156,14 @@ class TaggingService:
 
         try:
             response = requests.post(endpoint, headers=headers, json=data, timeout=self.timeout)
+            if response.status_code == 400:
+                try:
+                    err_json = response.json()
+                    err_msg = err_json.get('error', {}).get('message', '')
+                    if 'vision' in err_msg.lower() or 'image' in err_msg.lower() or 'multimodal' in err_msg.lower():
+                        return f"OpenRouter Error: The model '{model}' does not support image input. Please select a vision-capable model."
+                except Exception:
+                    pass
             if response.status_code != 200:
                 print(f"[ScribeNEO] Vision API Error: {response.text}")
             response.raise_for_status()
@@ -164,10 +202,11 @@ class TaggingService:
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
             
+        user_prompt = "Describe this image." if system_prompt else "Describe this image for a Stable Diffusion prompt. Output only the prompt tags and description."
         messages.append({
             "role": "user",
             "content": [
-                {"type": "text", "text": "Describe this image for a Stable Diffusion prompt. Output only the prompt tags and description."},
+                {"type": "text", "text": user_prompt},
                 {
                     "type": "image_url",
                     "image_url": {
@@ -188,6 +227,14 @@ class TaggingService:
 
         try:
             response = requests.post(endpoint, headers=headers, json=data, timeout=self.timeout)
+            if response.status_code == 400:
+                try:
+                    err_json = response.json()
+                    err_msg = err_json.get('error', '')
+                    if 'vision' in err_msg.lower() or 'image' in err_msg.lower() or 'multimodal' in err_msg.lower():
+                        return f"Hugging Face Error: The model '{model}' does not support image input. Please select a vision-capable model."
+                except Exception:
+                    pass
             if response.status_code != 200:
                 print(f"[ScribeNEO] HF Vision API Error: {response.text}")
             response.raise_for_status()
@@ -208,7 +255,7 @@ class TaggingService:
         if provider == "openrouter":
             return self.interrogate_openrouter(image, model, system_prompt)
         elif provider == "ollama":
-            return self.interrogate_ollama(image, model)
+            return self.interrogate_ollama(image, model, system_prompt)
         elif provider == "huggingface":
             return self.interrogate_huggingface(image, model, system_prompt)
         

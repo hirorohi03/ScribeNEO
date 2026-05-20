@@ -29,9 +29,30 @@ def load_personas():
     if os.path.exists(personas_path):
         try:
             with open(personas_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                personas = json.load(f)
+            
+            modified = False
+            for p in personas:
+                if 'name' in p:
+                    if p['name'].startswith("Scribe: "):
+                        p['name'] = p['name'].replace("Scribe: ", "", 1)
+                        p['type'] = 'scribe'
+                        modified = True
+                    elif p['name'].startswith("Vision: "):
+                        p['name'] = p['name'].replace("Vision: ", "", 1)
+                        p['type'] = 'vision'
+                        modified = True
+                
+                if 'type' not in p:
+                    p['type'] = 'scribe'
+                    modified = True
+            
+            if modified:
+                save_personas(personas)
+                
+            return personas
         except Exception as e:
-            print(f"[ScribeNEO] Error loading personas: {e}")
+            print(f"[ScribeNEO] Error loading/migrating personas: {e}")
             return []
     return []
 
@@ -41,6 +62,12 @@ def save_personas(personas):
             json.dump(personas, f, indent=4)
     except Exception as e:
         print(f"[ScribeNEO] Error saving personas: {e}")
+
+def get_enhancer_personas(personas):
+    return ["None"] + [p['name'] for p in personas if p.get('type') == 'scribe']
+
+def get_vision_personas(personas):
+    return ["None"] + [p['name'] for p in personas if p.get('type') == 'vision']
 
 # --- UI COMPONENT BUILDERS ---
 
@@ -85,6 +112,9 @@ def build_vision_module(persona_names, last_vision, last_persona="None"):
             caption_model = gr.Dropdown(choices=[last_vision] if last_vision else [], value=last_vision, label="Vision Engine", scale=3, allow_custom_value=True, elem_id="scribeneo_vision_model")
             refresh_vision = gr.Button("🔄", elem_classes="scribeneo-refresh-btn", scale=0)
             caption_persona = gr.Dropdown(choices=persona_names, value=last_persona, label="Vision Persona", scale=2, elem_id="scribeneo_vision_persona")
+
+        with gr.Row():
+            override_vision_filter = gr.Checkbox(label="Show all models (bypass vision filter)", value=False, elem_id="scribeneo_override_vision_filter")
         
         img_input = gr.Image(label="Source Image", type="pil", elem_classes="scribeneo-image-container")
         with gr.Row(elem_classes="scribeneo-action-bar"):
@@ -103,22 +133,27 @@ def build_vision_module(persona_names, last_vision, last_persona="None"):
             append_btn = gr.Button("➕ Append to Prompt")
             replace_btn = gr.Button("🔄 Replace Prompt")
             
-    return caption_model, refresh_vision, caption_persona, img_input, tag_btn, stop_vision_btn, copy_vision_btn, clear_vision_btn, tag_output, vis_to_txt2img, vis_to_img2img, append_btn, replace_btn
+    return caption_model, refresh_vision, caption_persona, img_input, tag_btn, stop_vision_btn, copy_vision_btn, clear_vision_btn, tag_output, vis_to_txt2img, vis_to_img2img, append_btn, replace_btn, override_vision_filter
 
-def build_config_hub(provider, init_key, init_end):
+def build_config_hub(provider, init_key, init_end, init_keep_alive):
     with gr.Accordion("🛠️ SCRIBE HUB: Configuration", open=False):
         with gr.Row():
             with gr.Column(scale=1):
                 gr.Markdown("#### ⚙️ Service Settings")
                 provider_input = gr.Dropdown(choices=["OpenRouter", "Hugging Face", "Ollama"], value=provider, label="Active Service Provider", elem_id="scribeneo_provider_input")
                 
-                with gr.Row(elem_classes="scribeneo-config-row"):
-                    api_key_input = gr.Textbox(label="API Key / Token", value=init_key, type="password", scale=4)
-                    reveal_api_btn = gr.Button("👁️", elem_id="scribeneo_reveal_api", scale=1)
+                with gr.Row(elem_classes="scribeneo-config-row") as key_row:
+                    api_key_input = gr.Textbox(label="API Key / Token", value=init_key, type="password", scale=4, visible=(provider != "Ollama"))
+                    reveal_api_btn = gr.Button("👁️", elem_id="scribeneo_reveal_api", scale=1, visible=(provider != "Ollama"))
                 
                 with gr.Row(elem_classes="scribeneo-config-row"):
                     endpoint_input = gr.Textbox(label="Endpoint URL", value=init_end, scale=4, interactive=False)
                     edit_endpoint_btn = gr.Button("✏️", elem_id="scribeneo_edit_endpoint", scale=1)
+
+                with gr.Row(elem_classes="scribeneo-config-row", visible=(provider == "Ollama")) as ollama_settings_row:
+                    keep_alive_input = gr.Number(label="Keep-Alive", value=init_keep_alive, minimum=-1, precision=0, scale=1, visible=(provider == "Ollama"), elem_id="scribeneo_keep_alive_num")
+                    ollama_model_dropdown = gr.Dropdown(choices=[], label="Model to Unload", interactive=True, allow_custom_value=True, scale=5, visible=(provider == "Ollama"))
+                    unload_model_btn = gr.Button("🛑 Unload", variant="stop", scale=1, visible=(provider == "Ollama"), elem_id="scribeneo_unload_btn")
                 
                 with gr.Row():
                     test_conn_btn = gr.Button("🔌 Test Connection", variant="secondary")
@@ -130,10 +165,12 @@ def build_config_hub(provider, init_key, init_end):
 *   **Service Provider**: Cloud engines or local infrastructure.
 *   **API Key / Token**: Secure input for authentication credentials.
 *   **Endpoint URL**: The target server address.
+*   **Ollama Keep-Alive**: VRAM load duration in seconds (e.g. 300, 0 to unload immediately, -1 to keep forever).
+*   **Ollama Model Manager**: Select a loaded model and click Unload to instantly unload it from VRAM.
 *   **Test Connection**: Real-time authentication handshake.
 *   **Save Configuration**: Persist settings to local config.json.
 """, elem_classes="scribeneo-handbook")
-    return provider_input, api_key_input, reveal_api_btn, endpoint_input, edit_endpoint_btn, test_conn_btn, save_global_btn
+    return provider_input, api_key_input, reveal_api_btn, endpoint_input, edit_endpoint_btn, test_conn_btn, save_global_btn, keep_alive_input, key_row, ollama_settings_row, ollama_model_dropdown, unload_model_btn
 
 def build_persona_lab(persona_names):
     with gr.Accordion("🎭 PERSONA LAB: Custom AI Personalities", open=False):
@@ -143,7 +180,9 @@ def build_persona_lab(persona_names):
             p_refresh = gr.Button("🔄", elem_classes="scribeneo-refresh-btn", scale=0)
         
         with gr.Group():
-            p_name = gr.Textbox(label="Name", placeholder="e.g. Cinematic Photographer")
+            with gr.Row():
+                p_name = gr.Textbox(label="Name", placeholder="e.g. Cinematic Photographer", scale=3)
+                p_type = gr.Radio(choices=["Prompt Enhancer", "Vision"], value="Prompt Enhancer", label="Category", scale=2)
             p_desc = gr.Textbox(label="Description", placeholder="A short blurb about this identity")
             p_prompt = gr.Textbox(label="System Prompt", lines=6, placeholder="Define the AI's behavior and style...")
         
@@ -152,12 +191,15 @@ def build_persona_lab(persona_names):
             p_delete = gr.Button("🗑️ Delete", variant="stop")
             p_new = gr.Button("✨ New Persona")
             
-    return p_select, p_refresh, p_name, p_desc, p_prompt, p_save, p_delete, p_new
+    return p_select, p_refresh, p_name, p_desc, p_prompt, p_type, p_save, p_delete, p_new
 
 def on_ui_tabs():
     # Initial state
     personas = load_personas()
     persona_names = ["None"] + [p['name'] for p in personas]
+    
+    enhancer_choices = get_enhancer_personas(personas)
+    vision_choices = get_vision_personas(personas)
     
     conf = load_config()
     provider = "OpenRouter"
@@ -165,6 +207,7 @@ def on_ui_tabs():
     # Determine initial key/endpoint based on provider
     init_key = ""
     init_end = ""
+    init_keep_alive = conf["ollama"].get("keep_alive", 60)
     if provider == "OpenRouter":
         init_key = conf["openrouter"]["key"]
         init_end = conf["openrouter"]["endpoint"]
@@ -180,18 +223,19 @@ def on_ui_tabs():
         with gr.Row():
             (enhancer_model, refresh_enhancer, enhancer_persona, raw_input, enhance_btn, 
              stop_enhance_btn, copy_enhance_btn, clear_enhance_btn, enhanced_output, 
-             send_txt2img, send_img2img) = build_enhancer_module(persona_names, "", "None")
+             send_txt2img, send_img2img) = build_enhancer_module(enhancer_choices, "", "None")
 
             (caption_model, refresh_vision, caption_persona, img_input, tag_btn, 
              stop_vision_btn, copy_vision_btn, clear_vision_btn, tag_output, 
-             vis_to_txt2img, vis_to_img2img, append_btn, replace_btn) = build_vision_module(persona_names, "", "None")
+             vis_to_txt2img, vis_to_img2img, append_btn, replace_btn, override_vision_filter) = build_vision_module(vision_choices, "", "None")
 
         # --- CONFIGURATION HUB ---
         (provider_input, api_key_input, reveal_api_btn, endpoint_input, 
-         edit_endpoint_btn, test_conn_btn, save_global_btn) = build_config_hub(provider, init_key, init_end)
+         edit_endpoint_btn, test_conn_btn, save_global_btn, keep_alive_input, 
+         key_row, ollama_settings_row, ollama_model_dropdown, unload_model_btn) = build_config_hub(provider, init_key, init_end, init_keep_alive)
 
         # --- PERSONA LAB ---
-        (p_select, p_refresh, p_name, p_desc, p_prompt, 
+        (p_select, p_refresh, p_name, p_desc, p_prompt, p_type,
          p_save, p_delete, p_new) = build_persona_lab(persona_names)
 
         # --- EVENT HANDLERS ---
@@ -210,6 +254,21 @@ def on_ui_tabs():
             conf = load_config()
             key_val = ""
             end_val = ""
+            keep_alive_val = conf["ollama"].get("keep_alive", 60)
+            
+            if isinstance(keep_alive_val, str):
+                if keep_alive_val.strip().isdigit():
+                    keep_alive_val = int(keep_alive_val.strip())
+                elif keep_alive_val.strip().lower() == "5m":
+                    keep_alive_val = 300
+                elif keep_alive_val.strip().lower() == "10m":
+                    keep_alive_val = 600
+                else:
+                    keep_alive_val = 600
+
+            show_key = (provider != "Ollama")
+            show_ollama = (provider == "Ollama")
+            
             if provider == "OpenRouter":
                 key_val = conf["openrouter"]["key"]
                 end_val = conf["openrouter"]["endpoint"]
@@ -224,9 +283,38 @@ def on_ui_tabs():
                 gr.Info(f"Switched to {provider}. Hit 🔄 to refresh your model lists.")
             provider_switched[0] = True
 
-            return gr.update(value=key_val), gr.update(value=end_val, interactive=False)
+            ollama_models = []
+            if provider == "Ollama":
+                try:
+                    ollama_models = llm_service.fetch_available_models(provider="Ollama", endpoint_url=end_val)
+                except Exception:
+                    pass
 
-        provider_input.change(fn=update_hub_fields, inputs=[provider_input], outputs=[api_key_input, endpoint_input])
+            return (
+                gr.update(value=key_val, visible=show_key),
+                gr.update(visible=show_key),
+                gr.update(value=end_val, interactive=False),
+                gr.update(value=keep_alive_val, visible=show_ollama),
+                gr.update(choices=ollama_models, value=ollama_models[0] if ollama_models else None, visible=show_ollama),
+                gr.update(visible=show_ollama),
+                gr.update(visible=show_key),
+                gr.update(visible=show_ollama)
+            )
+
+        provider_input.change(
+            fn=update_hub_fields, 
+            inputs=[provider_input], 
+            outputs=[
+                api_key_input, 
+                reveal_api_btn, 
+                endpoint_input, 
+                keep_alive_input, 
+                ollama_model_dropdown, 
+                unload_model_btn,
+                key_row,
+                ollama_settings_row
+            ]
+        )
 
         def toggle_edit_endpoint(current_interactive):
             new_state = not current_interactive
@@ -248,20 +336,22 @@ def on_ui_tabs():
 
         test_conn_btn.click(fn=run_test_connection, inputs=[provider_input, api_key_input, endpoint_input])
 
-        def run_sync_models(provider, api_key, endpoint, is_vision=False):
-            models = llm_service.fetch_available_models(provider, api_key, endpoint, is_vision=is_vision)
+        def run_sync_models(provider, api_key, endpoint, is_vision=False, override_filter=False):
+            fetch_vision = is_vision and not override_filter
+            models = llm_service.fetch_available_models(provider, api_key, endpoint, is_vision=fetch_vision)
             if not models:
-                gr.Warning(f"Failed to fetch {('Vision' if is_vision else 'Text')} models for {provider}.")
+                gr.Warning(f"Failed to fetch {('Vision' if fetch_vision else 'Text/All')} models for {provider}.")
                 return gr.update()
             
-            gr.Info(f"Synced {len(models)} {('Vision' if is_vision else 'Text')} models.")
+            gr.Info(f"Synced {len(models)} {('Vision' if fetch_vision else 'Text/All')} models.")
             return gr.update(choices=models)
 
         # Inline refresh buttons
-        refresh_enhancer.click(fn=run_sync_models, inputs=[provider_input, api_key_input, endpoint_input, gr.State(False)], outputs=[enhancer_model])
-        refresh_vision.click(fn=run_sync_models, inputs=[provider_input, api_key_input, endpoint_input, gr.State(True)], outputs=[caption_model])
+        refresh_enhancer.click(fn=run_sync_models, inputs=[provider_input, api_key_input, endpoint_input, gr.State(False), gr.State(False)], outputs=[enhancer_model])
+        refresh_vision.click(fn=run_sync_models, inputs=[provider_input, api_key_input, endpoint_input, gr.State(True), override_vision_filter], outputs=[caption_model])
+        override_vision_filter.change(fn=run_sync_models, inputs=[provider_input, api_key_input, endpoint_input, gr.State(True), override_vision_filter], outputs=[caption_model])
 
-        def run_save_global(provider, key, endpoint):
+        def run_save_global(provider, key, endpoint, keep_alive):
             conf = load_config()
             if provider == "OpenRouter":
                 conf["openrouter"]["key"] = key
@@ -271,25 +361,41 @@ def on_ui_tabs():
                 conf["huggingface"]["endpoint"] = endpoint
             elif provider == "Ollama":
                 conf["ollama"]["endpoint"] = endpoint
+                conf["ollama"]["keep_alive"] = keep_alive
             
             save_config(conf)
             gr.Info(f"Local config for {provider} saved.")
             return gr.update(interactive=False), gr.update(value="✏️"), False
 
-        save_global_btn.click(fn=run_save_global, inputs=[provider_input, api_key_input, endpoint_input], outputs=[endpoint_input, edit_endpoint_btn, endpoint_interactive_state])
+        save_global_btn.click(fn=run_save_global, inputs=[provider_input, api_key_input, endpoint_input, keep_alive_input], outputs=[endpoint_input, edit_endpoint_btn, endpoint_interactive_state])
+
+        def run_unload_model(model):
+            if not model:
+                gr.Warning("Please select or type a model name to unload.")
+                return
+            success, msg = llm_service.unload_ollama_model(model)
+            if success:
+                gr.Info(msg)
+            else:
+                gr.Warning(msg)
+
+        unload_model_btn.click(fn=run_unload_model, inputs=[ollama_model_dropdown], outputs=[])
 
         # Persona Lab Helpers
         def update_p_fields(name):
             ps = load_personas()
             p = next((x for x in ps if x['name'] == name), None)
-            if p: return p['name'], p['description'], p['system_prompt']
-            return "", "", ""
+            if p: 
+                type_val = "Vision" if p.get('type') == 'vision' else "Prompt Enhancer"
+                return p['name'], p['description'], p['system_prompt'], type_val
+            return "", "", "", "Prompt Enhancer"
 
-        p_select.change(fn=update_p_fields, inputs=[p_select], outputs=[p_name, p_desc, p_prompt])
+        p_select.change(fn=update_p_fields, inputs=[p_select], outputs=[p_name, p_desc, p_prompt, p_type])
 
-        def run_save_p(name, desc, prompt, original):
+        def run_save_p(name, desc, prompt, p_type_val, original):
             ps = load_personas()
-            new_p = {"name": name, "description": desc, "system_prompt": prompt}
+            type_val = "vision" if p_type_val == "Vision" else "scribe"
+            new_p = {"name": name, "type": type_val, "description": desc, "system_prompt": prompt}
             found = False
             for i, p in enumerate(ps):
                 if p['name'] == original:
@@ -300,7 +406,7 @@ def on_ui_tabs():
             save_personas(ps)
             names_with_none = ["None"] + [x['name'] for x in ps]
             gr.Info(f"Persona '{name}' saved.")
-            return gr.update(choices=names_with_none[1:]), gr.update(choices=names_with_none), gr.update(choices=names_with_none)
+            return gr.update(choices=names_with_none[1:]), gr.update(choices=get_enhancer_personas(ps)), gr.update(choices=get_vision_personas(ps))
 
         def run_delete_p(name):
             if not name: return gr.update(), gr.update(), gr.update()
@@ -310,11 +416,11 @@ def on_ui_tabs():
             choices_list = [x['name'] for x in ps]
             all_names = ["None"] + choices_list
             gr.Info(f"Persona '{name}' deleted.")
-            return gr.update(choices=choices_list, value=None), gr.update(choices=all_names), gr.update(choices=all_names)
+            return gr.update(choices=choices_list, value=None), gr.update(choices=get_enhancer_personas(ps)), gr.update(choices=get_vision_personas(ps))
 
-        p_save.click(fn=run_save_p, inputs=[p_name, p_desc, p_prompt, p_select], outputs=[p_select, enhancer_persona, caption_persona])
+        p_save.click(fn=run_save_p, inputs=[p_name, p_desc, p_prompt, p_type, p_select], outputs=[p_select, enhancer_persona, caption_persona])
         p_delete.click(fn=run_delete_p, inputs=[p_select], outputs=[p_select, enhancer_persona, caption_persona])
-        p_new.click(fn=lambda: ("", "", "", None), outputs=[p_name, p_desc, p_prompt, p_select])
+        p_new.click(fn=lambda: ("", "", "", "Prompt Enhancer", None), outputs=[p_name, p_desc, p_prompt, p_type, p_select])
 
         # Enhancer & Vision Logic
         def run_enhance(prompt, person_name, model, provider):
@@ -362,8 +468,21 @@ def on_ui_tabs():
         append_btn.click(fn=lambda x, y: f"{x}\n{y}" if x else y, inputs=[raw_input, tag_output], outputs=[raw_input])
         replace_btn.click(fn=lambda x: x, inputs=[tag_output], outputs=[raw_input])
 
-        # Initial UI Sync logic for API Keys only
-        scribeneo_tab.load(fn=update_hub_fields, inputs=[provider_input], outputs=[api_key_input, endpoint_input])
+        # Initial UI Sync
+        scribeneo_tab.load(
+            fn=update_hub_fields, 
+            inputs=[provider_input], 
+            outputs=[
+                api_key_input, 
+                reveal_api_btn, 
+                endpoint_input, 
+                keep_alive_input, 
+                ollama_model_dropdown, 
+                unload_model_btn,
+                key_row,
+                ollama_settings_row
+            ]
+        )
 
     return [(scribeneo_tab, "ScribeNEO", "scribe_neo_tab")]
 

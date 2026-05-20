@@ -30,7 +30,8 @@ def load_config():
             "endpoint": "https://router.huggingface.co/v1"
         },
         "ollama": {
-            "endpoint": "http://localhost:11434"
+            "endpoint": "http://localhost:11434",
+            "keep_alive": 60
         }
     }
     

@@ -311,3 +311,36 @@
     flex-direction: column !important;
     height: 100% !important;
 }
+
+#scribeneo_unload_btn {
+    border-radius: 8px !important;
+    background: rgba(244, 63, 94, 0.15) !important;
+    border: 1px solid var(--scribeneo-accent) !important;
+    color: var(--scribeneo-accent) !important;
+    font-weight: 700 !important;
+    transition: all 0.2s ease-in-out;
+    height: 38px !important;
+    min-height: 38px !important;
+}
+
+#scribeneo_unload_btn:hover {
+    background: rgba(244, 63, 94, 0.3) !important;
+    box-shadow: 0 0 12px rgba(244, 63, 94, 0.3) !important;
+}
+
+/* Align and unify input heights in config rows */
+.scribeneo-config-row input,
+.scribeneo-config-row select,
+.scribeneo-config-row .gradio-dropdown input,
+.scribeneo-config-row .gradio-dropdown select,
+.scribeneo-config-row .gradio-dropdown .wrap,
+.scribeneo-config-row .gradio-dropdown .dropdown-container,
+.scribeneo-config-row #scribeneo_keep_alive_num input {
+    height: 38px !important;
+    min-height: 38px !important;
+    box-sizing: border-box !important;
+}
+
+#scribeneo_keep_alive_num {
+    max-width: 110px !important;
+}

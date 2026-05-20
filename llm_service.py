@@ -27,7 +27,8 @@ class LLMService:
             "openrouter_endpoint": conf["openrouter"]["endpoint"],
             "hf_token": conf["huggingface"]["key"],
             "hf_endpoint": conf["huggingface"]["endpoint"],
-            "ollama_endpoint": conf["ollama"]["endpoint"]
+            "ollama_endpoint": conf["ollama"]["endpoint"],
+            "ollama_keep_alive": conf["ollama"].get("keep_alive", 60)
         }
 
     def call_openrouter(self, messages, model=None):
@@ -143,7 +144,7 @@ class LLMService:
                 models = [m['name'] for m in data.get('models', [])]
                 
                 if is_vision:
-                    vision_models = ['llava', 'moondream', 'bakllava', 'qwen-vl']
+                    vision_models = ['llava', 'moondream', 'bakllava', 'qwen', 'gemma', 'vl', 'vision', 'minicpm', 'paligemma']
                     return sorted([m for m in models if any(v in m.lower() for v in vision_models)])
                 
                 return sorted(models)
@@ -199,28 +200,56 @@ class LLMService:
 
     def call_ollama(self, messages, model="llama3"):
         """
-        Communicates with a local or remote Ollama server using their OpenAI-compatible shim.
+        Communicates with a local or remote Ollama server using the native API.
         """
         config = self.get_config()
-        url = f"{config['ollama_endpoint'].rstrip('/')}/v1/chat/completions"
+        url = f"{config['ollama_endpoint'].rstrip('/')}/api/chat"
         
+        keep_alive = config.get("ollama_keep_alive", 60)
+        try:
+            if isinstance(keep_alive, str) and keep_alive.strip().isdigit():
+                keep_alive = int(keep_alive.strip())
+            elif isinstance(keep_alive, str):
+                keep_alive = keep_alive.strip()
+        except Exception:
+            pass
+
         data = {
             "model": model,
             "messages": messages,
-            "stream": False
+            "stream": False,
+            "keep_alive": keep_alive
         }
 
         try:
             response = requests.post(url, json=data, timeout=self.timeout)
             response.raise_for_status()
             result = response.json()
-            return result['choices'][0]['message']['content']
+            return result['message']['content']
         except requests.exceptions.HTTPError as e:
             return f"Ollama HTTP Error ({e.response.status_code}): {e.response.text}"
         except requests.exceptions.Timeout:
             return "Ollama Error: Request timed out."
         except Exception as e:
             return f"Ollama Error: {str(e)}"
+
+    def unload_ollama_model(self, model):
+        """
+        Unloads the specified Ollama model from memory by sending a request with keep_alive: 0.
+        """
+        config = self.get_config()
+        url = f"{config['ollama_endpoint'].rstrip('/')}/api/generate"
+        data = {
+            "model": model,
+            "keep_alive": 0,
+            "stream": False
+        }
+        try:
+            response = requests.post(url, json=data, timeout=5.0)
+            response.raise_for_status()
+            return True, f"Successfully unloaded Ollama model '{model}'."
+        except Exception as e:
+            return False, f"Failed to unload Ollama model: {str(e)}"
 
     def call_hf(self, messages, model="mistralai/Mistral-7B-Instruct-v0.2"):
         """
