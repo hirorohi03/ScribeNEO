@@ -1,4 +1,4 @@
-/* ScribeNEO: Ultimate Dashboard Design System */
+/* ScribeNEO Design System */
 
 :root {
     --scribeneo-primary: #6366f1;
@@ -25,21 +25,19 @@
     border-color: rgba(99, 102, 241, 0.3);
 }
 
-
-/* Engine Modules - FLEXIBLE SIZING */
+/* Modules layout */
 .scribeneo-module {
     padding: 20px !important;
     background: var(--scribeneo-bg-deep) !important;
     border-top: 4px solid var(--scribeneo-primary) !important;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     min-height: 850px !important;
-    /* Use min-height to prevent cutoff */
     display: flex !important;
     flex-direction: column !important;
     overflow: visible !important;
 }
 
-/* Engine Selection Row - IMPROVED ALIGNMENT */
+/* Engine row alignment */
 .scribeneo-engine-row {
     display: flex !important;
     align-items: flex-end !important;
@@ -68,14 +66,12 @@
     flex-shrink: 0;
 }
 
-/* Scrollable areas inside modules */
 .scribeneo-module .gr-form {
     flex-grow: 1;
     overflow-y: auto !important;
     padding-right: 8px;
 }
 
-/* Balanced Spacing */
 .scribeneo-module .gr-form>* {
     margin-bottom: 8px !important;
 }
@@ -87,7 +83,6 @@
     padding: 10px !important;
     margin-bottom: 15px !important;
     height: 350px !important;
-    /* Fixed stable height */
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -100,7 +95,6 @@
     box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
 }
 
-/* Ensure the Gradio image component and the image itself adapt */
 .scribeneo-image-container .gr-image,
 .scribeneo-image-container img {
     max-height: 100% !important;
@@ -111,7 +105,7 @@
     border-radius: 8px;
 }
 
-/* Action Rows & Bar - SPACING */
+/* Action bars */
 .scribeneo-action-row,
 .scribeneo-action-bar {
     margin-top: 10px !important;
@@ -119,7 +113,7 @@
     display: flex !important;
 }
 
-/* Primary Action Buttons (ENHANCE / SCAN) */
+/* Primary buttons */
 #scribeneo_main_enhance_btn,
 #scribeneo_decode_btn {
     background: linear-gradient(135deg, var(--scribeneo-primary) 0%, var(--scribeneo-secondary) 100%) !important;
@@ -131,7 +125,7 @@
     flex-shrink: 0;
 }
 
-/* Utility Buttons (Stop, Copy, Clear) */
+/* Utility buttons */
 #scribe_neo_container .gr-button:not(#scribeneo_main_enhance_btn):not(#scribeneo_decode_btn) {
     background: rgba(255, 255, 255, 0.05) !important;
     border: 1px solid var(--scribeneo-border) !important;
@@ -140,11 +134,28 @@
     padding: 0 10px !important;
 }
 
+#scribe_neo_container #scribeneo_stop_enhance,
+#scribe_neo_container #scribeneo_stop_vision {
+    border-radius: 8px !important;
+    color: var(--scribeneo-accent) !important;
+    border: 1px solid var(--scribeneo-accent) !important;
+    background: rgba(244, 63, 94, 0.15) !important;
+    font-weight: 700 !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
 #scribe_neo_container #scribeneo_stop_enhance:hover,
 #scribe_neo_container #scribeneo_stop_vision:hover {
-    border-color: var(--scribeneo-accent) !important;
-    color: var(--scribeneo-accent) !important;
-    background: rgba(244, 63, 94, 0.1) !important;
+    background: rgba(244, 63, 94, 0.3) !important;
+    box-shadow: 0 0 12px rgba(244, 63, 94, 0.3) !important;
+}
+
+#scribe_neo_container #scribeneo_stop_enhance:disabled,
+#scribe_neo_container #scribeneo_stop_vision:disabled {
+    opacity: 0.4 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+    pointer-events: none !important;
 }
 
 #scribe_neo_container #scribeneo_copy_enhance:hover,
@@ -161,7 +172,7 @@
     background: rgba(255, 165, 0, 0.1) !important;
 }
 
-/* Processing State - Isolated Orange Border */
+/* Active processing indicators */
 #scribeneo_main_result.scribeneo-active,
 #scribeneo_vision_result.scribeneo-active,
 #scribeneo_main_result.scribeneo-active *:not(textarea),
@@ -177,11 +188,18 @@
     transition: border 0.2s, box-shadow 0.2s;
 }
 
-/* Configuration Row alignment */
+/* Config row alignment */
 .scribeneo-config-row {
     display: flex !important;
+    flex-wrap: nowrap !important;
     align-items: flex-end !important;
     gap: 8px !important;
+}
+
+.scribeneo-config-row > div {
+    align-self: flex-end !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
 }
 
 #scribeneo_reveal_api,
@@ -193,8 +211,8 @@
     border-radius: 8px !important;
 }
 
-/* Scribe Hub Handbook Panel */
-#scribeneo_hub_filler {
+/* Config reference card */
+#scribeneo_settings_reference {
     background: rgba(15, 23, 42, 0.4) !important;
     border: 1px solid var(--scribeneo-border) !important;
     border-radius: 12px;
@@ -223,16 +241,16 @@
     color: var(--scribeneo-primary) !important;
 }
 
-/* Premium Inputs */
+/* General input components */
 #scribe_neo_container textarea,
-#scribe_neo_container input[type="text"] {
+#scribe_neo_container input:not([type="range"]) {
     background: rgba(0, 0, 0, 0.3) !important;
     border: 1px solid var(--scribeneo-border) !important;
     border-radius: 8px !important;
     resize: none !important;
 }
 
-/* Scribe Tip Cards (Intelligence Box) */
+/* Tip cards */
 .scribeneo-tip-card {
     background: rgba(255, 255, 255, 0.04) !important;
     border: 1px solid var(--scribeneo-border) !important;
@@ -281,7 +299,7 @@
     color: var(--scribeneo-primary);
 }
 
-/* Fix Result Textbox Overflow - Aggressive Svelte/Gradio Override */
+/* Override Gradio layout constraints */
 #scribeneo_main_result,
 #scribeneo_vision_result {
     max-height: 220px !important;
@@ -305,7 +323,6 @@
     flex-grow: 1 !important;
 }
 
-/* Ensure the module's form area keeps buttons reachable */
 .scribeneo-module .gr-form {
     display: flex !important;
     flex-direction: column !important;
@@ -321,6 +338,7 @@
     transition: all 0.2s ease-in-out;
     height: 38px !important;
     min-height: 38px !important;
+    margin: 0 !important;
 }
 
 #scribeneo_unload_btn:hover {
@@ -328,19 +346,169 @@
     box-shadow: 0 0 12px rgba(244, 63, 94, 0.3) !important;
 }
 
-/* Align and unify input heights in config rows */
+.scribeneo-config-row {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: flex-end !important;
+    gap: 8px !important;
+}
+
+.scribeneo-config-row > div.block,
+.scribeneo-config-row > div {
+    align-self: flex-end !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border-width: 0 !important;
+    box-shadow: none !important;
+}
+
+.scribeneo-config-row label {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+}
+
+.scribeneo-config-row label span {
+    margin: 0 0 6px 0 !important;
+    padding: 0 !important;
+    font-size: 0.95rem !important;
+    line-height: 1.2 !important;
+}
+
 .scribeneo-config-row input,
 .scribeneo-config-row select,
-.scribeneo-config-row .gradio-dropdown input,
-.scribeneo-config-row .gradio-dropdown select,
-.scribeneo-config-row .gradio-dropdown .wrap,
-.scribeneo-config-row .gradio-dropdown .dropdown-container,
-.scribeneo-config-row #scribeneo_keep_alive_num input {
+.scribeneo-config-row .wrap,
+.scribeneo-config-row .dropdown-container,
+.scribeneo-config-row [class*="dropdown"] .wrap,
+.scribeneo-config-row [class*="dropdown"] select,
+#scribeneo_keep_alive_num input,
+#scribeneo_unload_model_dropdown .wrap,
+#scribeneo_unload_model_dropdown select {
     height: 38px !important;
     min-height: 38px !important;
+    max-height: 38px !important;
     box-sizing: border-box !important;
+    margin: 0 !important;
+}
+
+.scribeneo-config-row .gradio-dropdown .wrap-inner,
+.scribeneo-config-row [class*="dropdown"] .wrap-inner,
+#scribeneo_unload_model_dropdown .wrap-inner {
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
 }
 
 #scribeneo_keep_alive_num {
     max-width: 110px !important;
+}
+
+/* Hide status trackers and loading indicators on config inputs */
+#scribeneo_provider_input .status-tracker,
+#scribeneo_provider_input .loading-observer,
+#scribeneo_keep_alive_num .status-tracker,
+#scribeneo_keep_alive_num .loading-observer,
+#scribeneo_unload_btn .status-tracker,
+#scribeneo_unload_btn .loading-observer,
+#scribeneo_enhancer_model .status-tracker,
+#scribeneo_enhancer_model .loading-observer,
+#scribeneo_vision_model .status-tracker,
+#scribeneo_vision_model .loading-observer,
+.scribeneo-refresh-btn .status-tracker,
+.scribeneo-refresh-btn .loading-observer,
+.scribeneo-config-row .status-tracker,
+.scribeneo-config-row .loading-observer,
+.scribeneo-settings-row .status-tracker,
+.scribeneo-settings-row .loading-observer {
+    display: none !important;
+}
+
+/* Settings row layout (for side-by-side timeout and slider) */
+.scribeneo-settings-row {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+    margin-top: 12px !important;
+    margin-bottom: 12px !important;
+}
+
+.scribeneo-settings-row > div.block,
+.scribeneo-settings-row > div {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border-width: 0 !important;
+    box-shadow: none !important;
+}
+
+#scribeneo_request_timeout {
+    flex: 0 0 200px !important;
+}
+
+#scribeneo_max_tokens {
+    flex: 1 !important;
+}
+
+.scribeneo-settings-row label {
+    display: flex !important;
+    flex-direction: column !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+}
+
+/* Align baselines of the labels by matching heights of the label/badge containers */
+.scribeneo-settings-row label > span,
+.scribeneo-settings-row label > div {
+    margin: 0 0 6px 0 !important;
+    padding: 0 !important;
+    font-size: 0.95rem !important;
+    line-height: 24px !important;
+    height: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+/* Ensure the span inside the slider's top row also aligns correctly */
+.scribeneo-settings-row label > div > span {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 0.95rem !important;
+    line-height: 24px !important;
+}
+
+/* Ensure the number input field inside timeout has correct height and alignment */
+#scribeneo_request_timeout input {
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    width: 100% !important;
+}
+
+/* Center the range slider track vertically with the Timeout input by adding margins */
+.scribeneo-settings-row .gradio-slider input[type="range"] {
+    margin: 16px 0 !important;
+}
+
+/* Style the token count control (slider's number input) to be a small, non-clipping badge */
+.scribeneo-settings-row .gradio-slider input[type="number"] {
+    height: 24px !important;
+    min-height: 24px !important;
+    max-height: 24px !important;
+    width: 60px !important;
+    font-size: 0.9rem !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid var(--scribeneo-border) !important;
+    border-radius: 6px !important;
+    box-sizing: border-box !important;
+    padding: 0 4px !important;
+    text-align: center !important;
+    margin: 0 !important;
 }

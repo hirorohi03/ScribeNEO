@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.0] - 2026-05-21
+
+### Added
+- **LM Studio Integration**: Added support for LM Studio as a first-class service provider backend for prompt enhancement (text LLMs) and image scanning (vision models).
+- **Asynchronous Request Layer**: Migrated backend HTTP request operations from synchronous `requests` to asynchronous `httpx` to support concurrent operations and network-level request cancellation.
+- **Instant Request Cancellation**: Introduced functional stop buttons (`🛑`) that abort active LLM generation or image scanning requests on the network/socket level instantly.
+- **Configurable Request Timeout**: Added a global "Request Timeout" setting to allow users to customize maximum API wait times before a connection aborts.
+- **Configurable Max Output Tokens**: Added a global "Max Output Tokens" slider to constrain generated output lengths for both text and vision models.
+
+
 ## [1.1.0] - 2026-05-20
 
 ### Added

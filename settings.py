@@ -1,26 +1,26 @@
 """
-Config Service for ScribeNEO.
-Handles loading, saving, and migrating user settings between 
-local JSON storage and the WebUI options system.
+Settings manager for ScribeNEO.
+Handles loading, saving, and migrating user settings between local JSON storage
+and the WebUI options system.
 """
 import os
 import json
 from modules import shared
 
-# Extension root directory (Dynamic Resolution)
 EXT_ROOT = os.path.dirname(os.path.realpath(__file__))
 CONFIG_PATH = os.path.normpath(os.path.join(EXT_ROOT, "config.json"))
 
 def load_config():
     """
-    Load configuration from the local config.json file.
-    If the file does not exist, it attempts to migrate settings from 
-    legacy PromptScribe or ScribeNeo shared options.
+    Load configuration from local config.json file.
+    If the file does not exist, attempts to migrate settings from legacy options.
     
     Returns:
-        dict: The complete configuration dictionary.
+        dict: The configuration dictionary.
     """
     default_config = {
+        "timeout": 30,
+        "max_tokens": 512,
         "openrouter": {
             "key": "",
             "endpoint": "https://openrouter.ai/api/v1"
@@ -32,6 +32,10 @@ def load_config():
         "ollama": {
             "endpoint": "http://localhost:11434",
             "keep_alive": 60
+        },
+        "lmstudio": {
+            "endpoint": "http://localhost:1234/v1",
+            "key": ""
         }
     }
     
@@ -39,7 +43,7 @@ def load_config():
         try:
             with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
                 saved = json.load(f)
-                # Simple deep merge for top-level dicts, skip legacy keys
+                # Deep merge top-level dictionaries
                 for k, v in saved.items():
                     if k == "provider":
                         continue
@@ -51,10 +55,8 @@ def load_config():
         except Exception as e:
             print(f"[ScribeNEO] Error loading config: {e}")
 
-    # Migration Logic (First run or missing file)
+    # Migration logic for legacy settings
     migration_done = False
-    
-    # Check both legacy PromptScribe and new ScribeNeo keys
     legacy_prefixes = ["promptscribe_", "scribeneo_"]
     
     mapping = {
@@ -80,14 +82,13 @@ def load_config():
     if migration_done:
         save_config(default_config)
     else:
-        # Save defaults if no migration happened to ensure file exists
         save_config(default_config)
     
     return default_config
 
 def save_config(data):
     """
-    Persists the provided configuration dictionary to the local config.json file.
+    Persist configuration to the local config.json file.
     
     Args:
         data (dict): The configuration data to save.
