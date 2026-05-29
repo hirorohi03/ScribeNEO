@@ -6,8 +6,7 @@ for prompt enhancement and model synchronization using async I/O.
 import httpx
 import json
 import os
-import settings
-from settings import load_config
+from lib_scribeneo.settings import load_config
 
 DEFAULT_TEXT_MODEL = "google/gemini-2.0-flash-lite-preview-02-05:free"
 

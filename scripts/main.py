@@ -14,12 +14,12 @@ if ext_root not in sys.path:
     sys.path.append(ext_root)
 
 from modules import scripts, script_callbacks, shared
-from llm import llm
-from tagger import tagger
-from settings import load_config, save_config
+from lib_scribeneo.llm import llm
+from lib_scribeneo.tagger import tagger
+from lib_scribeneo.settings import load_config, save_config
 
 base_dir = scripts.basedir()
-personas_path = os.path.join(base_dir, "personas.json")
+personas_path = os.path.join(base_dir, "lib_scribeneo", "personas.json")
 
 def load_personas():
     """Load and migrate custom user personas from local storage."""

@@ -8,7 +8,7 @@ import base64
 import io
 from PIL import Image
 from modules import shared
-from llm import llm
+from lib_scribeneo.llm import llm
 
 class ImageTagger:
     """

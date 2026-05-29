@@ -2,7 +2,7 @@
 
 A prompt engineering extension for Stable Diffusion Forge Neo. Enhance text prompts with AI, interrogate images with vision models, and manage custom personas — all from a single dashboard.
 
-![ScribeNEO Dashboard](Screenshot.png)
+![ScribeNEO Dashboard](preview.png)
 
 > [!IMPORTANT]
 > **Compatibility:**
