@@ -1,3 +1,12 @@
+> [!IMPORTANT]
+> **ScribeNEO** was originally developed by **[SiliconeShojo](https://github.com/SiliconeShojo)**.
+> 
+> The original GitHub repository was deleted by SiliconeShojo. This repository was restored from a local clone of the original repository to preserve the project and keep it available for continued use.
+> 
+> This is a restoration of the original repository and is not a claim of original authorship. The original Git history and MIT License have been preserved.
+> 
+> The restored repository contains the original history up to commit `9b281e5` (`Fix compatibility issue with WD14-Tagger. Fixes #6`). Any changes made after the restoration will be clearly reflected in the commit history.
+
 # 🖋️ ScribeNEO
 
 A prompt engineering extension for Stable Diffusion Forge Neo. Enhance text prompts with AI, interrogate images with vision models, and manage custom personas — all from a single dashboard.
