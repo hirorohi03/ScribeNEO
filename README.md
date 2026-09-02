@@ -51,7 +51,7 @@ Central configuration panel for managing provider connections.
 
 1. Open your **Stable Diffusion WebUI** (Forge Neo).
 2. Navigate to the **Extensions** tab → **Install from URL**.
-3. Paste: `https://github.com/SiliconeShojo/ScribeNEO.git`
+3. Paste: `https://github.com/hirorohi03/ScribeNEO.git`
 4. Click **Install** and restart the WebUI.
 
 ---
